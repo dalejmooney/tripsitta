@@ -1,0 +1,70 @@
+version: '3'
+services:
+
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: digitalocean.com/php
+    container_name: trip-sitta-app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.4
+
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: trip-sitta-webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "9000:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.3
+
+  #MySQL Service
+  db:
+    image: mariadb
+    container_name: trip-sitta-db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: root
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./mysql/dumps:/docker-entrypoint-initdb.d
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.2
+
+#Docker Networks
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
+#Volumes
+volumes:
+  dbdata:
+    driver: local

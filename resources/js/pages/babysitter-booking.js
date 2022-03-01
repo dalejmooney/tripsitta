@@ -1,0 +1,53 @@
+$(document).ready(function(){
+    $('#booking_status_up').on('click', function(e){
+       e.preventDefault();
+
+        updateStatus($(this), status_update_url, 'up');
+    });
+    $('#booking_status_down').on('click', function(e){
+        e.preventDefault();
+
+        updateStatus($(this), status_update_url, 'down');
+    });
+    $('#booking_status_done').on('click', function(e){
+        e.preventDefault();
+
+        updateStatus($(this), status_update_url, 'done');
+    });
+    $('#booking_status_confirm').on('click', function(e){
+        e.preventDefault();
+
+        updateStatus($(this), status_update_url, 'confirm');
+    });
+
+    function updateStatus(clicked_el, url, new_status)
+    {
+        clicked_el.attr('disabled', 'disabled').addClass('is-loading');
+        $('html,body').css("cursor", "progress")
+
+        $.ajax({
+            url: url,
+            type: "post",
+            dataType: "json",
+            data: { 'new_status': new_status },
+            headers: {'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')},
+
+        }).done(function(data) {
+            $('#message_container').empty().append('<div class="notification is-success has-margin-bottom-md">'+ data.success +'</div>');
+            if(data.new_status !== undefined){
+                $('#booking-status-container').empty().append(data.new_status);
+            }
+
+            $('#booking_status_up, #booking_status_down, #booking_status_done').remove();
+
+            clicked_el.attr('disabled', false).removeClass('is-loading');
+            $('html,body').css("cursor", "default")
+        })
+        .fail(function(data) {
+            $('#message_container').empty().append('<div class="notification is-danger has-margin-bottom-md">'+ data.responseJSON.error +'</div>');
+
+            clicked_el.attr('disabled', false).removeClass('is-loading');
+            $('html,body').css("cursor", "default")
+        });
+    }
+});
